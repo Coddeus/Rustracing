@@ -1,12 +1,14 @@
 use std::fs::File;
 use std::io::{self, Write};
 
+mod vec3;
+use vec3::*;
 
 fn main() {
     let mut output = File::create("./out.ppm").unwrap();
 
-    const WIDTH: u32 = 1000;
-    const HEIGHT: u32 = 1000;
+    const WIDTH: u32 = 512;
+    const HEIGHT: u32 = 512;
 
 
     let header = format!("P3\n{} {}\n255\n", WIDTH, HEIGHT);
@@ -17,12 +19,8 @@ fn main() {
         io::stdout().flush().unwrap();
 
         for col in 0..WIDTH {
-            let triplet: String = format!("{} {} {}\n", 
-                ((row as f32 / (WIDTH-1) as f32) * 255.999).floor() as u32, 
-                ((col as f32 / (HEIGHT-1) as f32) * 255.999).floor() as u32, 
-                0
-            );
-            let _ = output.write(triplet.as_bytes()).unwrap();
+            let color = Color3::new(row as f64 / (WIDTH-1) as f64, col as f64 / (HEIGHT-1) as f64, 0.);
+            let _ = output.write(color.ppm().as_bytes()).unwrap();
         }
         
         println!("Done.");
