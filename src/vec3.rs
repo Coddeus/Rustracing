@@ -72,7 +72,7 @@ impl std::fmt::Display for Vec3 {
 impl Add for Vec3 {
     type Output = Self;
     fn add(self, rhs: Self) -> Self::Output {
-        Self {
+        Self::Output {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
             z: self.z + rhs.z,
@@ -82,7 +82,7 @@ impl Add for Vec3 {
 impl Sub for Vec3 {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self::Output {
-        Self {
+        Self::Output {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
@@ -109,7 +109,7 @@ impl SubAssign for Vec3 {
 impl Neg for Vec3 {
     type Output = Self;
     fn neg(self) -> Self::Output {
-        Self {
+        Self::Output {
             x: -self.x,
             y: -self.y,
             z: -self.z,
@@ -122,7 +122,7 @@ impl Neg for Vec3 {
 impl Mul<f64> for Vec3 {
     type Output = Self;
     fn mul(self, rhs: f64) -> Self::Output {
-        Self {
+        Self::Output {
             x: self.x * rhs,
             y: self.y * rhs,
             z: self.z * rhs,
@@ -136,6 +136,26 @@ impl Div<f64> for Vec3 {
             x: self.x / rhs,
             y: self.y / rhs,
             z: self.z / rhs,
+        }
+    }
+}
+impl Mul<Vec3> for f64 {
+    type Output = Vec3;
+    fn mul(self, rhs: Vec3) -> Self::Output {
+        Self::Output {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
+    }
+}
+impl Div<Vec3> for f64 {
+    type Output = Vec3;
+    fn div(self, rhs: Vec3) -> Self::Output {
+        Self::Output {
+            x: self / rhs.x,
+            y: self / rhs.y,
+            z: self / rhs.z,
         }
     }
 }
@@ -168,7 +188,7 @@ impl Mul<Vec3> for Vec3 {
 impl BitAnd for Vec3 {
     type Output = Self;
     fn bitand(self, rhs: Self) -> Self::Output {
-        Self {
+        Self::Output {
             x: self.y * rhs.z - self.z * rhs.y,
             y: self.z * rhs.x - self.x * rhs.z,
             z: self.x * rhs.y - self.y * rhs.x,
