@@ -1,12 +1,27 @@
 use std::fs::File;
 use std::io::{self, Write};
 
+use fastrand::f64;
+
 mod vec3;
 use vec3::*;
 mod ray;
 use ray::*;
 
+fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> bool {
+    let oc: Vec3 = r.orig() - *center;
+    let a: f64 = r.dir() * r.dir();
+    let b: f64 = 2. * oc * r.dir();
+    let c: f64 = oc * oc - radius * radius;
+    let discriminant = b*b - 4.*a*c;
+    discriminant>=0.
+}
+
 fn ray_color(r: &Ray) -> Color3 {
+    if hit_sphere(&Point3::new(0., 0., -1.), 0.5, r) {
+        return Color3::new((f64()+1.)/2., 0., 0.)
+    }
+
     let unit: Vec3 = r.dir().unit();
     let alpha: f64 = 0.5 * (unit.y() + 1.);
     (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(0., 0., 1.)
@@ -19,7 +34,7 @@ fn main() {
 
     let aspect: f64 = 16./9.;
 
-    let image_width: u32 = 400;
+    let image_width: u32 = 1920;
     let image_height: u32 = {
         let height: f64 = image_width as f64 / aspect;
         if height < 1. { 1 }
