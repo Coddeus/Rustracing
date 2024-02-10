@@ -48,6 +48,7 @@ impl Vec3 {
 
 impl Color3 {
     /// The string to be written in order to represent this color in a ppm file
+    /// Expects normalized float color values
     pub fn ppm(&self) -> String {
         format!("{} {} {}\n", (self.x * 255.999).floor() as u32, (self.y * 255.999).floor() as u32, (self.z * 255.999).floor() as u32)
     }
