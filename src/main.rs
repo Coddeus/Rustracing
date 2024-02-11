@@ -1,25 +1,20 @@
+use std::f64::INFINITY;
 use std::fs::File;
 use std::io::{self, Write};
-
-use fastrand::f64;
 
 mod vec3;
 use vec3::*;
 mod ray;
 use ray::*;
+mod objects;
+use objects::*;
+mod utils;
+use utils::*;
 
-fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> bool {
-    let oc: Vec3 = r.orig() - *center;
-    let a: f64 = r.dir() * r.dir();
-    let b: f64 = 2. * oc * r.dir();
-    let c: f64 = oc * oc - radius * radius;
-    let discriminant = b*b - 4.*a*c;
-    discriminant>=0.
-}
-
-fn ray_color(r: &Ray) -> Color3 {
-    if hit_sphere(&Point3::new(0., 0., -1.), 0.5, r) {
-        return Color3::new((f64()+1.)/2., 0., 0.)
+fn ray_color(r: &Ray, objects: &Objects) -> Color3 {
+    let mut rec: HitRecord = HitRecord::new();
+    if objects.hit(r,Interval::new(0., INFINITY), &mut rec) {
+        return 0.5 * (rec.normal + Color3::new(1., 1., 1.))
     }
 
     let unit: Vec3 = r.dir().unit();
@@ -34,14 +29,28 @@ fn main() {
 
     let aspect: f64 = 16./9.;
 
-    let image_width: u32 = 1920;
+    let image_width: u32 = 1440;
     let image_height: u32 = {
         let height: f64 = image_width as f64 / aspect;
         if height < 1. { 1 }
         else { height as u32 }
     };
 
+    // Objects
+
+    let mut objects: Objects = Objects::new();
+
+    let all_obj = vec![
+        Sphere::new(Point3::new(0., 0., -1.), 0.5),
+        Sphere::new(Point3::new(0., -100.5, -1.), 100.),
+    ];
+    for obj in all_obj.iter() {
+        objects.add(obj);
+    }
+    
+
     // Viewport
+
     let focal_length: f64 = 1.;
 
     let viewport_height: f64 = 2.0;
@@ -58,6 +67,8 @@ fn main() {
     let viewport_upper_left = camera_pos - Vec3::new(0., 0., focal_length) - viewport_u/2. - viewport_v/2.;
     let pixel00: Point3 = viewport_upper_left + 0.5 * (delta_u + delta_v);
 
+    // Render
+
     let header = format!("P3\n{} {}\n255\n", image_width, image_height);
     let _ = output.write(header.as_bytes()).unwrap();
 
@@ -71,7 +82,7 @@ fn main() {
 
             let r: Ray = Ray::new(camera_pos, ray_dir);
 
-            let frag_color: Color3 = ray_color(&r);
+            let frag_color: Color3 = ray_color(&r, &mut objects);
             let _ = output.write(frag_color.ppm().as_bytes()).unwrap();
         }
         
