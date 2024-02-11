@@ -1,5 +1,8 @@
-use super::{Object, HitRecord};
-use crate::{Interval, Point3, Ray, Vec3};
+use crate::utils::Interval;
+use crate::ray::Ray;
+use crate::vec3::{Vec3, Point3};
+
+use super::{HitRecord, Object};
 
 
 pub struct Sphere {

@@ -1,10 +1,9 @@
-use crate::Interval;
-
-use super::ray::*;
-use super::vec3::*;
+use crate::utils::Interval;
+use crate::ray::*;
+use crate::vec3::*;
 
 mod sphere;
-pub use sphere::*;
+pub use sphere::Sphere;
 
 pub struct HitRecord {
     pub p: Point3,
