@@ -2,6 +2,8 @@ use std::f64::INFINITY;
 use std::fs::File;
 use std::io::{self, Write};
 
+use fastrand::f64;
+
 use crate::objects::{HitRecord, Objects};
 use crate::ray::Ray;
 use crate::utils::Interval;
@@ -10,8 +12,8 @@ use crate::vec3::{Color3, Point3, Vec3};
 
 
 pub struct Camera {
-    pub aspect: f64,
-    pub image_width: u32,
+    samples_per_pixel: f64,
+    image_width: u32,
     image_height: u32,
     center: Point3,
     pixel00: Point3,
@@ -30,20 +32,22 @@ impl Camera {
             io::stdout().flush().unwrap();
     
             for col in 0..self.image_width {
-                let frag_pos = self.pixel00 + col as f64 * self.delta_u + row as f64 * self.delta_v;
-                let ray_dir = frag_pos - self.center;
+                let mut frag_sum_color: Color3 = Color3::new(0., 0., 0.);
+                (0..self.samples_per_pixel as u32).into_iter().for_each(|_i| {
+                    let r = self.get_ray(col, row);
+                    frag_sum_color += self.ray_color(&r, &mut objects);
+                });
     
-                let r: Ray = Ray::new(self.center, ray_dir);
-    
-                let frag_color: Color3 = self.ray_color(&r, &mut objects);
-                let _ = self.output.write(frag_color.ppm().as_bytes()).unwrap();
+                self.write_color(frag_sum_color);
             }
             
             println!("Done.");
         }
     }
 
-    pub fn initialize(aspect: f64, image_width: u32) -> Self {
+    pub fn initialize(aspect: f64, samples_per_pixel: u32, image_width: u32) -> Self {
+        let samples_per_pixel: f64 = samples_per_pixel as f64;
+
         let image_height = {
             let height: f64 = image_width as f64 / aspect;
             if height < 1. { 1 }
@@ -72,7 +76,7 @@ impl Camera {
         let output = File::create("./out.ppm").unwrap();
 
         Self {
-            aspect,
+            samples_per_pixel,
             image_width,
             image_height,
             center,
@@ -81,6 +85,14 @@ impl Camera {
             delta_v,
             output,
         }
+    }
+
+    fn get_ray(&self, col: u32, row: u32) -> Ray {
+        let frag_pos = self.pixel00 + (col as f64 + f64() - 0.5) * self.delta_u + (row as f64 + f64() - 0.5) * self.delta_v;
+        let ray_dir = frag_pos - self.center;
+
+        Ray::new(self.center, ray_dir)
+
     }
     
     fn ray_color(&mut self, r: &Ray, objects: &Objects) -> Color3 {
@@ -92,5 +104,14 @@ impl Camera {
         let unit: Vec3 = r.dir().unit();
         let alpha: f64 = 0.5 * (unit.y() + 1.);
         (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(0., 0., 1.)
+    }
+
+    fn write_color(&mut self, sum_color: Color3) {
+        let scale: f64 = 1. / self.samples_per_pixel;
+
+        let mut pixel_color: Color3 = sum_color * scale;
+        pixel_color.clamp(0., 1.);
+
+        let _ = self.output.write(pixel_color.ppm().as_bytes()).unwrap();
     }
 }

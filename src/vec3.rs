@@ -44,6 +44,14 @@ impl Vec3 {
         let len = self.len();
         *self = *self / len;
     }
+
+    /// Clamps all values to the interval [min; max]
+    pub fn clamp(&mut self, min: f64, max: f64) {
+        self.x = self.x.clamp(min, max);
+        self.y = self.y.clamp(min, max);
+        self.z = self.z.clamp(min, max);
+        
+    }
 }
 
 impl Color3 {

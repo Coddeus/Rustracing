@@ -47,9 +47,9 @@ impl<'obj> Objects<'obj> {
         self.0.push(object)
     }
 
-    pub fn clear(&mut self) {
-        self.0 = vec![]
-    }
+    // pub fn clear(&mut self) {
+    //     self.0 = vec![]
+    // }
 
     pub fn hit(&self, r: &Ray, mut ray_t: Interval, rec: &mut HitRecord) -> bool {
         let mut temp_rec: HitRecord = HitRecord::new();
