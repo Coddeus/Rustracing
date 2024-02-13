@@ -1,10 +1,10 @@
 // use std::f64::consts::PI;
 // 
-// use fastrand::f64;
-// 
-// pub fn rand_within(min: f64, max: f64) -> f64 {
-//     (max-min) * f64() + min
-// }
+use fastrand::f64;
+
+pub fn rand_within(min: f64, max: f64) -> f64 {
+    (max-min) * f64() + min
+}
 // 
 // pub fn deg_to_rad(degrees: f64) -> f64 {
 //     degrees * PI / 180.

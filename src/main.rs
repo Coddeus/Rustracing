@@ -22,6 +22,6 @@ fn main() {
     }
 
 
-    let mut cam = Camera::initialize(16./9., 100, 1440);
+    let mut cam = Camera::initialize(16./9., 1440, 10, 10);
     cam.render(objects);
 }

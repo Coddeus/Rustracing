@@ -13,6 +13,7 @@ use crate::vec3::{Color3, Point3, Vec3};
 
 pub struct Camera {
     samples_per_pixel: f64,
+    max_depth: u32,
     image_width: u32,
     image_height: u32,
     center: Point3,
@@ -35,7 +36,7 @@ impl Camera {
                 let mut frag_sum_color: Color3 = Color3::new(0., 0., 0.);
                 (0..self.samples_per_pixel as u32).into_iter().for_each(|_i| {
                     let r = self.get_ray(col, row);
-                    frag_sum_color += self.ray_color(&r, &mut objects);
+                    frag_sum_color += self.ray_color(&r, self.max_depth, &mut objects);
                 });
     
                 self.write_color(frag_sum_color);
@@ -45,7 +46,7 @@ impl Camera {
         }
     }
 
-    pub fn initialize(aspect: f64, samples_per_pixel: u32, image_width: u32) -> Self {
+    pub fn initialize(aspect: f64, image_width: u32, samples_per_pixel: u32, max_depth: u32) -> Self {
         let samples_per_pixel: f64 = samples_per_pixel as f64;
 
         let image_height = {
@@ -77,6 +78,7 @@ impl Camera {
 
         Self {
             samples_per_pixel,
+            max_depth,
             image_width,
             image_height,
             center,
@@ -95,21 +97,25 @@ impl Camera {
 
     }
     
-    fn ray_color(&mut self, r: &Ray, objects: &Objects) -> Color3 {
+    fn ray_color(&mut self, r: &Ray, depth: u32, objects: &Objects) -> Color3 {
+        if depth < 1 { return Color3::new(0., 0., 0.) }
+
         let mut rec: HitRecord = HitRecord::new();
-        if objects.hit(r, Interval::new(0., INFINITY), &mut rec) {
-            return 0.5 * (rec.normal + Color3::new(1., 1., 1.))
+        if objects.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
+            let dir: Vec3 = rec.normal + Vec3::rand_unit();
+            return 0.5 * self.ray_color(&Ray::new(rec.p, dir), depth-1, objects)
         }
 
         let unit: Vec3 = r.dir().unit();
         let alpha: f64 = 0.5 * (unit.y() + 1.);
-        (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(0., 0., 1.)
+        (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(1., 0.5, 0.)
     }
 
     fn write_color(&mut self, sum_color: Color3) {
         let scale: f64 = 1. / self.samples_per_pixel;
 
         let mut pixel_color: Color3 = sum_color * scale;
+        pixel_color.to_gamma_2();
         pixel_color.clamp(0., 1.);
 
         let _ = self.output.write(pixel_color.ppm().as_bytes()).unwrap();

@@ -1,5 +1,7 @@
 use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
+use crate::utils::rand_within;
+
 pub type Point3 = Vec3;
 pub type Color3 = Vec3;
 
@@ -13,6 +15,30 @@ pub struct Vec3 {
 impl Vec3 {
     pub fn new(x: f64, y: f64, z: f64) -> Self {
         Self { x, y, z }
+    }
+    pub fn rand(min: f64, max: f64) -> Self {
+        Vec3::new(rand_within(min, max), rand_within(min, max), rand_within(min, max))
+    }
+    /// Returns a random unit vector on the with the same direction as the given normal vector.
+    pub fn rand_unit() -> Self {
+        loop {
+            let p = Vec3::rand(-1., 1.);
+            if p.len_squared() < 1. {
+                return p.unit()
+            }
+        }
+    }
+    /// Returns a random unit vector on the with the same direction as the given normal vector (= on the right hemisphere).
+    pub fn rand_unit_onhem(normal: Vec3) -> Self {
+        loop {
+            let p = Vec3::rand(-1., 1.);
+            if p.len_squared() < 1. {
+                let p = p.unit();
+                return
+                    if p * normal > 0. { p }
+                    else { -p }
+            }
+        }
     }
 
     pub fn x(&self) -> f64 {
@@ -50,7 +76,6 @@ impl Vec3 {
         self.x = self.x.clamp(min, max);
         self.y = self.y.clamp(min, max);
         self.z = self.z.clamp(min, max);
-        
     }
 }
 
@@ -59,6 +84,13 @@ impl Color3 {
     /// Expects normalized float color values
     pub fn ppm(&self) -> String {
         format!("{} {} {}\n", (self.x * 255.999).floor() as u32, (self.y * 255.999).floor() as u32, (self.z * 255.999).floor() as u32)
+    }
+
+    /// Converts this color to from linear to gamma 2.
+    pub fn to_gamma_2(&mut self) {
+        self.x = self.x.sqrt();
+        self.y = self.y.sqrt();
+        self.z = self.z.sqrt();
     }
 }
 
