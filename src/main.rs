@@ -6,10 +6,10 @@ mod utils;
 mod vec3;
 
 
-use std::rc::Rc;
+use std::{f64::consts::PI, rc::Rc};
 
 use materials::{Dielectric, Lambertian, Metal};
-use vec3::{Color3, Point3};
+use vec3::{Color3, Point3, Vec3};
 use objects::{Objects, Sphere};
 use camera::Camera;
 
@@ -34,6 +34,15 @@ fn main() {
     }
 
 
-    let mut cam = Camera::initialize(16./9., 1440, 100, 15);
+    let mut cam: Camera = Camera::default();
+    cam.aspect = 16.0 / 9.0;
+    cam.image_width = 1440;
+    cam.samples_per_pixel = 10;
+    cam.max_depth = 10;
+    cam.vfov = 20.0;
+    cam.lookfrom = Point3::new(-2.0, 2.0, 1.0);
+    cam.lookat = Point3::new(0.0, 0.0, -1.0);
+    cam.vup = Vec3::new(0.0, 1.0, 0.0);
+
     cam.render(objects);
 }

@@ -6,25 +6,62 @@ use fastrand::f64;
 
 use crate::objects::{HitRecord, Objects};
 use crate::ray::Ray;
-use crate::utils::Interval;
+use crate::utils::{deg_to_rad, Interval};
 use crate::vec3::{Color3, Point3, Vec3};
 
 
 
 pub struct Camera {
-    samples_per_pixel: f64,
-    max_depth: u32,
-    image_width: u32,
+    pub aspect: f64,
+    pub image_width: u32,
+    pub samples_per_pixel: u32,
+    pub max_depth: u32,
+    pub lookfrom: Point3,
+    pub lookat: Point3,
+    pub vup: Vec3,
+    pub vfov: f64,
+    pub output: File,
+    
     image_height: u32,
     center: Point3,
     pixel00: Point3,
     delta_u: Vec3,
     delta_v: Vec3,
-    output: File,
+    u: Vec3,
+    v: Vec3,
+    w: Vec3,
+}
+
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            aspect: 16.0/9.0,
+            image_width: 720,
+            samples_per_pixel: 10,
+            max_depth: 10,
+            lookfrom: Point3::new(0.0, 0.0, -1.0),
+            lookat: Point3::new(0.0, 0.0, 0.0),
+            vup: Vec3::new(0.0, 1.0, 0.0),
+            vfov: 90.0,
+            output: File::create("./out.ppm").unwrap(),
+
+            // Dummy initialization
+            image_height: 0,
+            center: Point3::new(0.0, 0.0, 0.0),
+            pixel00: Point3::new(0.0, 0.0, 0.0),
+            delta_u: Vec3::new(0.0, 0.0, 0.0),
+            delta_v: Vec3::new(0.0, 0.0, 0.0),
+            u: Vec3::new(0.0, 0.0, 0.0),
+            v: Vec3::new(0.0, 0.0, 0.0),
+            w: Vec3::new(0.0, 0.0, 0.0),
+        }
+    }
 }
 
 impl Camera {
     pub fn render(&mut self, mut objects: Objects) {
+        self.initialize();
+
         let header = format!("P3\n{} {}\n255\n", self.image_width, self.image_height);
         let _ = self.output.write(header.as_bytes()).unwrap();
     
@@ -46,47 +83,35 @@ impl Camera {
         }
     }
 
-    pub fn initialize(aspect: f64, image_width: u32, samples_per_pixel: u32, max_depth: u32) -> Self {
-        let samples_per_pixel: f64 = samples_per_pixel as f64;
-
-        let image_height = {
-            let height: f64 = image_width as f64 / aspect;
+    pub fn initialize(&mut self) {
+        self.image_height = {
+            let height: f64 = self.image_width as f64 / self.aspect;
             if height < 1. { 1 }
             else { height as u32 }
         };
 
-        let center = Point3::new(0., 0., 0.);
-
+        self.center = self.lookfrom;
 
         // Viewport
 
-        let focal_length: f64 = 1.;
+        let focal_length: f64 = (self.lookfrom - self.lookat).len();
+        let theta: f64 = deg_to_rad(self.vfov);
+        let h: f64 = (theta/2.0).tan();
+        let viewport_height: f64 = 2. * h * focal_length;
+        let viewport_width: f64 = viewport_height * self.image_width as f64 / self.image_height as f64;
 
-        let viewport_height: f64 = 2.;
-        let viewport_width: f64 = viewport_height * image_width as f64 / image_height as f64;
+        self.w = (self.lookfrom - self.lookat).unit();
+        self.u = (self.vup & self.w).unit();
+        self.v = self.w & self.u;
 
-        let viewport_u: Vec3 = Vec3::new(viewport_width, 0., 0.);
-        let viewport_v: Vec3 = Vec3::new(0., -viewport_height, 0.);
+        let viewport_u: Vec3 = viewport_width * self.u;
+        let viewport_v: Vec3 = viewport_height * (-self.v);
 
-        let delta_u = viewport_u / image_width as f64;
-        let delta_v = viewport_v / image_height as f64;
+        self.delta_u = viewport_u / self.image_width as f64;
+        self.delta_v = viewport_v / self.image_height as f64;
 
-        let viewport_upper_left = center - Vec3::new(0., 0., focal_length) - viewport_u/2. - viewport_v/2.;
-        let pixel00 = viewport_upper_left + 0.5 * (delta_u + delta_v);
-
-        let output = File::create("./out.ppm").unwrap();
-
-        Self {
-            samples_per_pixel,
-            max_depth,
-            image_width,
-            image_height,
-            center,
-            pixel00,
-            delta_u,
-            delta_v,
-            output,
-        }
+        let viewport_upper_left = self.center - focal_length * self.w - viewport_u/2. - viewport_v/2.;
+        self.pixel00 = viewport_upper_left + 0.5 * (self.delta_u + self.delta_v);
     }
 
     fn get_ray(&self, col: u32, row: u32) -> Ray {
@@ -116,7 +141,7 @@ impl Camera {
     }
 
     fn write_color(&mut self, sum_color: Color3) {
-        let scale: f64 = 1. / self.samples_per_pixel;
+        let scale: f64 = 1. / self.samples_per_pixel as f64;
 
         let mut pixel_color: Color3 = sum_color * scale;
         pixel_color.to_gamma_2();
