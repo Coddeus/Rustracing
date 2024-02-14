@@ -97,6 +97,13 @@ impl Vec3 {
         self.y = self.y.clamp(min, max);
         self.z = self.z.clamp(min, max);
     }
+
+    pub fn refract(&self, n: Vec3, etai_over_etat: f64) -> Vec3 {
+        let cos_theta = ((-*self) * n).min(1.0);
+        let r_out_perp: Vec3 = etai_over_etat * (*self + cos_theta * n);
+        let r_out_parallel: Vec3 = - (1.0 - r_out_perp.len_squared()).abs().sqrt() * n;
+        r_out_perp + r_out_parallel
+    }
 }
 
 impl Color3 {

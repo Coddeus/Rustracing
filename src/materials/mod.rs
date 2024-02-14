@@ -4,6 +4,8 @@ mod lambertian;
 pub use lambertian::*;
 mod metal;
 pub use metal::*;
+mod dielectric;
+pub use dielectric::*;
 
 pub trait Material {
     /// Returns whether a ray is scattered. If it is, modifies `attenuation` and `r_scattered` for the material.
