@@ -1,4 +1,4 @@
-use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
+use std::{f64::EPSILON, ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
 use crate::utils::rand_within;
 
@@ -41,6 +41,10 @@ impl Vec3 {
         }
     }
 
+    pub fn near_zero(&self) -> bool {
+        self.x.abs() < EPSILON && self.y.abs() < EPSILON && self.z.abs() < EPSILON
+    }
+
     pub fn x(&self) -> f64 {
         self.x
     }
@@ -53,6 +57,22 @@ impl Vec3 {
 
     pub fn negate(&mut self) {
         *self = -*self;
+    }
+    /// Returns the multiplications of each value of `self` with the corresponding value of `rhs`.
+    pub fn mult(self, rhs: Self) -> Self {
+         Self {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+         }
+    }
+    /// Multiplies each value of `self` with the corresponding value of `rhs`.
+    pub fn multeq(&mut self, rhs: Self)  {
+         *self = Self {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+         }
     }
     
     pub fn len(&self) -> f64 {
@@ -248,6 +268,20 @@ impl BitAndAssign for Vec3 {
     }
 }
 
+// ------------------------- Reflection: assert!(incident | normal == reflected)
+
+impl BitOr for Vec3 {
+    type Output = Self;
+    fn bitor(self, rhs: Self) -> Self::Output {
+        self - 2. * (self * rhs) * rhs
+    }
+}
+impl BitOrAssign for Vec3 {
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = *self - 2. * (*self * rhs) * rhs;
+    }
+}
+
 
 // -------------------------------------------------- Tests
 
@@ -350,9 +384,26 @@ fn crosseq() {
     let v = Vec3::new(2., -5., 11.);
 
     t &= u;
-    dbg!(t);
 
     assert!(t == v)
+}
+#[test]
+fn reflect() {
+    let i = Vec3::new(3., -1., 2.);
+    let n = Vec3::new(1., 2., -1.);
+    let r = Vec3::new(5., 3., 0.);
+
+    assert!(i | n == r)
+}
+#[test]
+fn reflecteq() {
+    let mut i = Vec3::new(3., -1., 2.);
+    let n = Vec3::new(1., 2., -1.);
+    let r = Vec3::new(5., 3., 0.);
+
+    i |= n;
+
+    assert!(i == r)
 }
 #[test]
 fn neg() {

@@ -102,13 +102,17 @@ impl Camera {
 
         let mut rec: HitRecord = HitRecord::new();
         if objects.hit(r, Interval::new(0.001, INFINITY), &mut rec) {
-            let dir: Vec3 = rec.normal + Vec3::rand_unit();
-            return 0.5 * self.ray_color(&Ray::new(rec.p, dir), depth-1, objects)
+            let mut r_scattered: Ray = Ray::new(Vec3::new(0., 0., 0.), Vec3::new(0., 0., 0.));
+            let mut attenuation: Color3 = Color3::new(0., 0., 0.);
+            if rec.mat.scatter(r, &rec, &mut attenuation, &mut r_scattered) {
+                return attenuation.mult(self.ray_color(&r_scattered, depth-1, objects))
+            }
+            return Color3::new(0., 0., 0.)
         }
 
         let unit: Vec3 = r.dir().unit();
         let alpha: f64 = 0.5 * (unit.y() + 1.);
-        (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(1., 0.5, 0.)
+        (1.-alpha) * Color3::new(1., 1., 1.) + alpha * Color3::new(1.0, 0.5, 0.8)
     }
 
     fn write_color(&mut self, sum_color: Color3) {

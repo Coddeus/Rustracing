@@ -1,3 +1,6 @@
+use std::rc::Rc;
+
+use crate::materials::Material;
 use crate::utils::Interval;
 use crate::ray::Ray;
 use crate::vec3::{Vec3, Point3};
@@ -8,13 +11,15 @@ use super::{HitRecord, Object};
 pub struct Sphere {
     center: Point3,
     radius: f64,
+    mat: Rc<dyn Material>
 }
 
 impl Sphere {
-    pub fn new(center: Point3, radius: f64) -> Self {
+    pub fn new(center: Point3, radius: f64, mat: Rc<dyn Material>) -> Self {
         Self {
             center,
             radius,
+            mat,
         }
     }
 }
@@ -43,6 +48,7 @@ impl Object for Sphere {
         rec.p = r.at(rec.t);
         let n_outward: Vec3 = (rec.p - self.center) / self.radius;
         rec.set_normal(r, n_outward);
+        rec.mat = self.mat.clone();
 
         true
     }
