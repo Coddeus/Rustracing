@@ -20,6 +20,8 @@ pub struct Camera {
     pub lookat: Point3,
     pub vup: Vec3,
     pub vfov: f64,
+    pub defocus_angle: f64,
+    pub focus_dist: f64,
     pub output: File,
     
     image_height: u32,
@@ -30,6 +32,8 @@ pub struct Camera {
     u: Vec3,
     v: Vec3,
     w: Vec3,
+    defocus_disk_u: Vec3,
+    defocus_disk_v: Vec3,
 }
 
 impl Default for Camera {
@@ -43,6 +47,8 @@ impl Default for Camera {
             lookat: Point3::new(0.0, 0.0, 0.0),
             vup: Vec3::new(0.0, 1.0, 0.0),
             vfov: 90.0,
+            defocus_angle: 0.0,
+            focus_dist: 10.0,
             output: File::create("./out.ppm").unwrap(),
 
             // Dummy initialization
@@ -54,6 +60,8 @@ impl Default for Camera {
             u: Vec3::new(0.0, 0.0, 0.0),
             v: Vec3::new(0.0, 0.0, 0.0),
             w: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_u: Vec3::new(0.0, 0.0, 0.0),
+            defocus_disk_v: Vec3::new(0.0, 0.0, 0.0),
         }
     }
 }
@@ -94,10 +102,9 @@ impl Camera {
 
         // Viewport
 
-        let focal_length: f64 = (self.lookfrom - self.lookat).len();
         let theta: f64 = deg_to_rad(self.vfov);
         let h: f64 = (theta/2.0).tan();
-        let viewport_height: f64 = 2. * h * focal_length;
+        let viewport_height: f64 = 2. * h * self.focus_dist;
         let viewport_width: f64 = viewport_height * self.image_width as f64 / self.image_height as f64;
 
         self.w = (self.lookfrom - self.lookat).unit();
@@ -110,16 +117,27 @@ impl Camera {
         self.delta_u = viewport_u / self.image_width as f64;
         self.delta_v = viewport_v / self.image_height as f64;
 
-        let viewport_upper_left = self.center - focal_length * self.w - viewport_u/2. - viewport_v/2.;
+        let viewport_upper_left = self.center - self.focus_dist * self.w - viewport_u/2. - viewport_v/2.;
         self.pixel00 = viewport_upper_left + 0.5 * (self.delta_u + self.delta_v);
+        
+        let defocus_radius: f64 = self.focus_dist * deg_to_rad(self.defocus_angle / 2.0).tan();
+        self.defocus_disk_u = self.u * defocus_radius;
+        self.defocus_disk_v = self.v * defocus_radius;
     }
 
     fn get_ray(&self, col: u32, row: u32) -> Ray {
         let frag_pos = self.pixel00 + (col as f64 + f64() - 0.5) * self.delta_u + (row as f64 + f64() - 0.5) * self.delta_v;
-        let ray_dir = frag_pos - self.center;
 
-        Ray::new(self.center, ray_dir)
+        let ray_origin: Point3 = if self.defocus_angle <= 0.0 { self.center } else { self.defocus_ray_sample() };
+        let ray_dir = frag_pos - ray_origin;
 
+        Ray::new(ray_origin, ray_dir)
+
+    }
+
+    fn defocus_ray_sample(&self) -> Point3 {
+        let p = Vec3::rand_in_unit_disk();
+        self.center + p.x() * self.defocus_disk_u + p.y() * self.defocus_disk_v
     }
     
     fn ray_color(&mut self, r: &Ray, depth: u32, objects: &Objects) -> Color3 {

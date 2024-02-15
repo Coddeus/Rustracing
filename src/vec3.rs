@@ -1,5 +1,7 @@
 use std::{f64::EPSILON, ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign}};
 
+use fastrand::f64;
+
 use crate::utils::rand_within;
 
 pub type Point3 = Vec3;
@@ -19,12 +21,21 @@ impl Vec3 {
     pub fn rand(min: f64, max: f64) -> Self {
         Vec3::new(rand_within(min, max), rand_within(min, max), rand_within(min, max))
     }
-    /// Returns a random unit vector on the with the same direction as the given normal vector.
+    /// Returns a random unit vector.
     pub fn rand_unit() -> Self {
         loop {
             let p = Vec3::rand(-1., 1.);
             if p.len_squared() < 1. {
                 return p.unit()
+            }
+        }
+    }
+    /// Returns a random 2D unit vector (Z = 0).
+    pub fn rand_in_unit_disk() -> Self {
+        loop {
+            let p = Vec3::new((f64() - 0.5) * 2.0, (f64() - 0.5) * 2.0, 0.0);
+            if p.len_squared() < 1. {
+                return p
             }
         }
     }
